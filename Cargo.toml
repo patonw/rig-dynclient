@@ -1,14 +1,18 @@
 [package]
 name = "rig-dynclient"
-version = "0.1.0"
+version = "0.32.0"
 edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/patonw/rig-dynclient.git"
+description = "A dynamic provider client wrapper for rig"
 
 [dependencies]
 delegate = "0.13.5"
 disjoint_impls = { version = "1.3.7" }
-kinded = "0.4.0"
-rig-core = { version = "0.31.0", features = ["derive", "rmcp", "dynclient"] }
-rmcp = { version = "0.14", features = [
+kinded = "0.5.0"
+rig-core = { version = "0.32.0", features = ["rmcp"] }
+rmcp = { version = "0.16", features = [
   "client",
   "server",
   "reqwest",                                  # required for some strange reason
@@ -16,9 +20,11 @@ rmcp = { version = "0.14", features = [
   "transport-io",
   "transport-streamable-http-client",
   "transport-streamable-http-client-reqwest",
-] }
+], optional = true }
 thiserror = "2.0.17"
 
 [features]
+default = []
+rmcp = ["dep:rmcp", "rig-core/rmcp"]
 audio = ["rig-core/audio"]
 image = ["rig-core/image"]

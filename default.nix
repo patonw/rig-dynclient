@@ -14,7 +14,7 @@
 }:
 let
   libraries = with pkgs; [
-    openssl
+    # openssl
     stdenv.cc.cc.lib
   ];
 
