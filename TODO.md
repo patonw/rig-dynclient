@@ -1,0 +1,7 @@
+- [ ] Version bump
+- [ ] Documentation
+- [ ] Readme
+- [ ] Tests
+- [ ] Crates.io publish
+- [ ] GHA workflow
+- [ ] Dependabot automations
