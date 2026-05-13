@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod completion;
 
 pub use builder::DynClientBuilder;
 
@@ -6,4 +7,4 @@ pub use builder::DynClientBuilder;
 #[cfg(feature = "rmcp")]
 pub use rmcp;
 
-pub use rig;
+pub use rig_core as rig;
