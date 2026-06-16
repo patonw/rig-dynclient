@@ -1,6 +1,6 @@
 [package]
 name = "rig-dynclient"
-version = "0.37.0"
+version = "0.38.2"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
@@ -13,7 +13,7 @@ delegate = "0.13.5"
 disjoint_impls = { version = "1.3.7" }
 futures = "0.3.32"
 kinded = "0.5.0"
-rig-core = { version = "0.37.0", features = ["rmcp"] }
+rig-core = { version = "0.38.2" }
 rmcp = { version = "1.6.0", features = [
   "client",
   "server",
