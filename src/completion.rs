@@ -23,8 +23,8 @@ pub struct FinalCompletionResponse {
 }
 
 impl GetTokenUsage for FinalCompletionResponse {
-    fn token_usage(&self) -> Option<Usage> {
-        self.usage
+    fn token_usage(&self) -> Usage {
+        self.usage.unwrap_or_default()
     }
 }
 
@@ -164,7 +164,7 @@ where
     let item = match chunk? {
         StreamedAssistantContent::Final(f) => {
             RawStreamingChoice::FinalResponse(FinalCompletionResponse {
-                usage: f.token_usage(),
+                usage: Some(f.token_usage()),
             })
         }
         StreamedAssistantContent::Text(text) => RawStreamingChoice::Message(text.text),
