@@ -6,13 +6,14 @@ use kinded::Kinded;
 use rig_core::client::ProviderClientError;
 use std::{collections::HashMap, str::FromStr};
 
+use rig_agent::agent::AgentBuilder;
+
 use rig_core::{
-    agent::AgentBuilder,
     client::{Capabilities, Capable, Client, Nothing, ProviderClient},
     completion::{CompletionError, CompletionModel},
     providers::{
-        anthropic, azure, cohere, deepseek, galadriel, gemini, groq, huggingface, hyperbolic, mira,
-        mistral, moonshot, ollama, openai, openrouter, perplexity, together, xai,
+        anthropic, azure, cohere, deepseek, gemini, groq, huggingface, hyperbolic, mira, mistral,
+        moonshot, ollama, openai, openrouter, perplexity, together, xai,
     },
 };
 
@@ -63,10 +64,11 @@ disjoint_impls! {
 #[derive(Kinded)]
 #[kinded(kind=Provider, derive(Debug, Assoc), attrs(
     func(pub fn api_key(&self) -> &'static str),
-    func(pub fn required(&self) -> bool { true })
+    func(pub fn required(&self) -> bool { true }),
+    func(pub fn base_url(&self) -> Option<&'static str>),
 ))]
 pub enum AnyClient {
-    #[kinded(attrs(assoc(api_key = "ANTHROPIC_API_KEY")))]
+    #[kinded(attrs(assoc(api_key = "ANTHROPIC_API_KEY", base_url = "ANTHROPIC_BASE_URL")))]
     Anthropic(anthropic::Client),
     #[kinded(attrs(assoc(api_key = "COHERE_API_KEY")))]
     Cohere(cohere::Client),
@@ -74,7 +76,7 @@ pub enum AnyClient {
     Gemini(gemini::Client),
     #[kinded(attrs(assoc(api_key = "HUGGINGFACE_API_KEY")))]
     HuggingFace(huggingface::Client),
-    #[kinded(attrs(assoc(api_key = "OPENAI_API_KEY")))]
+    #[kinded(attrs(assoc(api_key = "OPENAI_API_KEY", base_url = "OPENAI_BASE_URL")))]
     OpenAI(openai::Client),
     #[kinded(attrs(assoc(api_key = "OPENROUTER_API_KEY")))]
     OpenRouter(openrouter::Client),
@@ -86,19 +88,21 @@ pub enum AnyClient {
     Azure(azure::Client),
     #[kinded(attrs(assoc(api_key = "DEEPSEEK_API_KEY")))]
     DeepSeek(deepseek::Client),
-    #[kinded(attrs(assoc(api_key = "GALADRIEL_API_KEY")))]
-    Galadriel(galadriel::Client),
     #[kinded(attrs(assoc(api_key = "GROQ_API_KEY")))]
     Groq(groq::Client),
     #[kinded(attrs(assoc(api_key = "HYPERBOLIC_API_KEY")))]
     Hyperbolic(hyperbolic::Client),
-    #[kinded(attrs(assoc(api_key = "MOONSHOT_API_KEY")))]
+    #[kinded(attrs(assoc(api_key = "MOONSHOT_API_KEY", base_url = "MOONSHOT_API_BASE")))]
     Moonshot(moonshot::Client),
     #[kinded(attrs(assoc(api_key = "MIRA_API_KEY")))]
     Mira(mira::Client),
     #[kinded(attrs(assoc(api_key = "MISTRAL_API_KEY")))]
     Mistral(mistral::Client),
-    #[kinded(attrs(assoc(api_key = "OLLAMA_API_KEY", required = false)))]
+    #[kinded(attrs(assoc(
+        api_key = "OLLAMA_API_KEY",
+        required = false,
+        base_url = "OLLAMA_API_BASE_URL"
+    )))]
     Ollama(ollama::Client),
     #[kinded(attrs(assoc(api_key = "PERPLEXITY_API_KEY")))]
     Perplexity(perplexity::Client),
@@ -119,7 +123,6 @@ impl Provider {
             Provider::XAI => XAI(xai::Client::from_env()?),
             Provider::Azure => Azure(azure::Client::from_env()?),
             Provider::DeepSeek => DeepSeek(deepseek::Client::from_env()?),
-            Provider::Galadriel => Galadriel(galadriel::Client::from_env()?),
             Provider::Groq => Groq(groq::Client::from_env()?),
             Provider::Hyperbolic => Hyperbolic(hyperbolic::Client::from_env()?),
             Provider::Moonshot => Moonshot(moonshot::Client::from_env()?),
@@ -130,14 +133,36 @@ impl Provider {
         })
     }
 
-    pub fn from_key(&self, key: &str) -> Result<AnyClient, ProviderClientError> {
+    pub fn from_key(
+        &self,
+        key: &str,
+        base_url: Option<&str>,
+    ) -> Result<AnyClient, ProviderClientError> {
         use AnyClient::*;
         Ok(match self {
-            Provider::Anthropic => Anthropic(anthropic::Client::from_val(key.into())?),
+            Provider::Anthropic => {
+                let client = anthropic::Client::builder().api_key(key);
+
+                let client = match base_url {
+                    Some(url) => client.base_url(url),
+                    None => client,
+                };
+
+                Anthropic(client.build()?)
+            }
             Provider::Cohere => Cohere(cohere::Client::from_val(key.into())?),
             Provider::Gemini => Gemini(gemini::Client::from_val(key.into())?),
             Provider::HuggingFace => HuggingFace(huggingface::Client::from_val(key.into())?),
-            Provider::OpenAI => OpenAI(openai::Client::from_val(key.into())?),
+            Provider::OpenAI => {
+                let client = openai::Client::builder().api_key(key);
+
+                let client = match base_url {
+                    Some(url) => client.base_url(url),
+                    None => client,
+                };
+
+                OpenAI(client.build()?)
+            }
             Provider::OpenRouter => OpenRouter(openrouter::Client::from_val(key.into())?),
             Provider::Together => Together(together::Client::from_val(key.into())?),
             Provider::XAI => XAI(xai::Client::from_val(key.into())?),
@@ -153,13 +178,29 @@ impl Provider {
                 Azure(client)
             }
             Provider::DeepSeek => DeepSeek(deepseek::Client::from_val(key.into())?),
-            Provider::Galadriel => Galadriel(galadriel::Client::from_val((key.into(), None))?),
             Provider::Groq => Groq(groq::Client::from_val(key.into())?),
             Provider::Hyperbolic => Hyperbolic(hyperbolic::Client::from_val(key.into())?),
-            Provider::Moonshot => Moonshot(moonshot::Client::from_val(key.into())?),
+            Provider::Moonshot => {
+                let client = moonshot::Client::builder().api_key(key);
+
+                let client = match base_url {
+                    Some(url) => client.base_url(url),
+                    None => client,
+                };
+                Moonshot(client.build()?)
+            }
             Provider::Mira => Mira(mira::Client::from_val(key.into())?),
             Provider::Mistral => Mistral(mistral::Client::from_val(key.into())?),
-            Provider::Ollama => Ollama(ollama::Client::from_val(key.into())?),
+            Provider::Ollama => {
+                let client = ollama::Client::builder().api_key(key);
+
+                let client = match base_url {
+                    Some(url) => client.base_url(url),
+                    None => client,
+                };
+
+                Ollama(client.build()?)
+            }
             Provider::Perplexity => Perplexity(perplexity::Client::from_val(key.into())?),
         })
     }
@@ -178,7 +219,6 @@ impl AnyClient {
             AnyClient::XAI(client) => client,
             AnyClient::Azure(client) => client,
             AnyClient::DeepSeek(client) => client,
-            AnyClient::Galadriel(client) => client,
             AnyClient::Groq(client) => client,
             AnyClient::Hyperbolic(client) => client,
             AnyClient::Moonshot(client) => client,
@@ -278,7 +318,12 @@ impl DynClientBuilder {
             _ => Err(Error::MissingEnv(provider.api_key().into()))?,
         };
 
-        let client = provider.from_key(api_key).map_err(Error::from)?;
+        let base_url = provider
+            .base_url()
+            .and_then(|k| self.env.get(k))
+            .map(String::as_str);
+
+        let client = provider.from_key(api_key, base_url).map_err(Error::from)?;
 
         Ok(client)
     }

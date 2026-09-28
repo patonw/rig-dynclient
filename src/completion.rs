@@ -1,6 +1,6 @@
 use futures::StreamExt as _;
+use rig_agent::agent::AgentBuilder;
 use rig_core::{
-    agent::AgentBuilder,
     client::CompletionClient,
     completion::{
         CompletionError, CompletionModel, CompletionRequest, CompletionRequestBuilder,
@@ -191,6 +191,7 @@ where
         StreamedAssistantContent::ReasoningDelta { id, reasoning } => {
             RawStreamingChoice::ReasoningDelta { id, reasoning }
         }
+        StreamedAssistantContent::Unknown(value) => RawStreamingChoice::Unknown(value),
     };
 
     Ok(item)

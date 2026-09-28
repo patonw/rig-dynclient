@@ -7,4 +7,6 @@ pub use builder::DynClientBuilder;
 #[cfg(feature = "rmcp")]
 pub use rmcp;
 
-pub use rig_core as rig;
+pub use rig;
+pub use rig_agent;
+pub use rig_core;
